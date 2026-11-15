@@ -1,0 +1,3392 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>好棒棒點餐</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+        }
+        .container {
+            max-width: 850px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .main-layout {
+            display: flex;
+            gap: 20px;
+        }
+        .user-shops-sidebar {
+            width: 230px;
+            flex-shrink: 0;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            border: 1px solid #e9ecef;
+            height: fit-content;
+        }
+        .shops-header {
+            font-size: 15px;
+            font-weight: 700;
+            color: #333;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+            border-bottom: 2px solid #667eea;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .user-shops-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .shop-card {
+            background: white;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .shop-card:hover {
+            border-color: #667eea;
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(102, 126, 234, 0.12);
+        }
+        .shop-card.active {
+            border-color: #667eea;
+            background: #f0f4ff;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.25);
+        }
+        .shop-edit-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            background: #edf2f7;
+            padding: 10px 15px;
+            border-radius: 8px;
+        }
+        .edit-btn-group {
+            display: flex;
+            gap: 10px;
+        }
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 13px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        .btn-add {
+            background: #3182ce;
+            color: white;
+        }
+        .btn-add:hover {
+            background: #2b6cb0;
+        }
+        .btn-save {
+            background: #38a169;
+            color: white;
+        }
+        .btn-save:hover {
+            background: #2f855a;
+        }
+        .btn-back {
+            background: #718096;
+            color: white;
+        }
+        .btn-back:hover {
+            background: #4a5568;
+        }
+        .edit-item-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .edit-input-name {
+            flex: 1;
+            padding: 8px 10px;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .edit-input-price {
+            width: 90px;
+            padding: 8px 10px;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .btn-delete-item {
+            background: #e53e3e;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-delete-item:hover {
+            background: #c53030;
+        }
+        .btn-delete-shop {
+            background: transparent;
+            border: none;
+            color: #a0aec0;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+        .btn-delete-shop:hover {
+            color: #e53e3e;
+            background: #fff5f5;
+        }
+        .edit-shop-name-title-input {
+            font-size: 14px;
+            font-weight: 700;
+            color: #2d3748;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            padding: 4px 8px;
+            width: 140px;
+        }
+        .shop-card-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #2d3748;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 140px;
+        }
+        .shop-card-count {
+            font-size: 11px;
+            color: #4a5568;
+            background: #edf2f7;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+        .no-shops-msg {
+            font-size: 12px;
+            color: #718096;
+            text-align: center;
+            padding: 15px 5px;
+            line-height: 1.6;
+        }
+        .menu-main-area {
+            flex: 1;
+            min-width: 0;
+        }
+        @media (max-width: 650px) {
+            .main-layout {
+                flex-direction: column;
+            }
+            .user-shops-sidebar {
+                width: 100%;
+            }
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+        .title:hover {
+            transform: scale(1.04);
+            opacity: 0.92;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 12px;
+            border-radius: 20px;
+        }
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid white;
+        }
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .user-name {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .menu-section {
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .menu-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .menu-list {
+            list-style: none;
+        }
+        .menu-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #ddd;
+        }
+        .menu-item:last-child {
+            border-bottom: none;
+        }
+        .item-name {
+            font-weight: 500;
+            color: #333;
+        }
+        .item-price {
+            font-weight: 600;
+            color: #06C755;
+            font-size: 16px;
+        }
+        .json-preview {
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 20px;
+            overflow-x: auto;
+        }
+        .json-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        .json-code {
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+            color: #333;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            border: 1px solid #fcc;
+        }
+        .menu-item-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+        .menu-item-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .quantity-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 4px 8px;
+        }
+        .quantity-btn {
+            background: none;
+            border: none;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #667eea;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .quantity-btn:hover {
+            background: #f0f0f0;
+            border-radius: 4px;
+        }
+        .quantity-btn:disabled {
+            color: #ccc;
+            cursor: not-allowed;
+        }
+        .quantity-display {
+            min-width: 30px;
+            text-align: center;
+            font-weight: 600;
+            color: #333;
+        }
+        .cart-section {
+            background: #f9f9f9;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .cart-section.show {
+            display: block;
+        }
+        .cart-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .cart-items-list {
+            list-style: none;
+            margin-bottom: 15px;
+        }
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            border: 1px solid #eee;
+        }
+        .cart-item-info {
+            flex: 1;
+        }
+        .cart-item-name {
+            font-weight: 500;
+            color: #333;
+        }
+        .cart-item-qty {
+            font-size: 12px;
+            color: #666;
+            margin-top: 2px;
+        }
+        .cart-item-price {
+            font-weight: 600;
+            color: #06C755;
+            min-width: 60px;
+            text-align: right;
+        }
+        .cart-item-remove {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-left: 8px;
+        }
+        .cart-item-remove:hover {
+            background: #ff5252;
+        }
+        .cart-summary {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 10px;
+            background: #f5f5f5;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+        .cart-summary-label {
+            font-weight: 600;
+            color: #333;
+        }
+        .cart-summary-total {
+            font-size: 20px;
+            font-weight: 700;
+            color: #06C755;
+        }
+        .submit-btn {
+            width: 100%;
+            padding: 14px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .submit-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        /* 菜單下方送出列 */
+        .bottom-submit-bar {
+            margin-top: 16px;
+            padding: 0 4px 16px;
+            display: none; /* 預設隱藏，購物車有內容時才顯示 */
+        }
+        .bottom-submit-bar .submit-btn {
+            border-radius: 10px;
+            padding: 15px 20px;
+            font-size: 17px;
+            letter-spacing: 0.5px;
+        }
+        .empty-cart-msg {
+            text-align: center;
+            color: #999;
+            padding: 20px;
+            font-style: italic;
+        }
+        .cart-icon-btn {
+            position: fixed;
+            bottom: 25px;
+            left: 25px;
+            z-index: 999;
+            background: #ffffff;
+            color: #1e293b;
+            border: 2px solid #e2e8f0;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            font-size: 26px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .cart-icon-btn:hover {
+            transform: scale(1.1);
+            background: #f8fafc;
+            border-color: #cbd5e1;
+            box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
+        }
+        .cart-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: #ff4757;
+            color: white;
+            border: 2px solid white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: flex-end;
+        }
+        .modal-overlay.show {
+            display: flex;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 16px 16px 0 0;
+            width: 100%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 20px;
+            animation: slideUp 0.3s ease-out;
+        }
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+        }
+        .modal-close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+        .modal-close-btn:hover {
+            color: #333;
+        }
+        .btn-close-order {
+            background: #e53e3e;
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(229, 62, 62, 0.3);
+            transition: all 0.2s ease;
+        }
+        .btn-close-order:hover {
+            background: #c53030;
+            transform: translateY(-1px);
+        }
+        .closed-banner {
+            padding: 14px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            line-height: 1.5;
+        }
+        .closed-banner.success {
+            background: #e6fffa;
+            border: 1px solid #b2f5ea;
+            color: #234e52;
+        }
+        .closed-banner.danger {
+            background: #fff5f5;
+            border: 1px solid #fed7d7;
+            color: #9b2c2c;
+            text-align: center;
+        }
+        .my-order-summary-card {
+            background: #f7fafc;
+            border: 2px solid #cbd5e0;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .my-order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e2e8f0;
+            margin-bottom: 10px;
+        }
+        .my-order-list {
+            list-style: none;
+            margin-bottom: 10px;
+        }
+        .my-order-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 14px;
+            color: #4a5568;
+            border-bottom: 1px dashed #edf2f7;
+        }
+        .my-order-total {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 700;
+            font-size: 15px;
+            color: #2d3748;
+            padding-top: 8px;
+        }
+        /* ===== 歷史訂單按鈕 ===== */
+        .btn-history {
+            background: rgba(255,255,255,0.18);
+            color: white;
+            border: 1.5px solid rgba(255,255,255,0.45);
+            padding: 7px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        .btn-history:hover {
+            background: rgba(255,255,255,0.32);
+            border-color: white;
+        }
+        /* ===== 歷史訂單 Modal ===== */
+        .history-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1100;
+            justify-content: center;
+            align-items: flex-end;
+        }
+        .history-overlay.show {
+            display: flex;
+        }
+        .history-modal {
+            background: white;
+            border-radius: 20px 20px 0 0;
+            width: 100%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 20px;
+            animation: slideUp 0.3s ease-out;
+        }
+        .history-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 14px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .history-modal-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #2d3748;
+        }
+        .history-empty {
+            text-align: center;
+            color: #a0aec0;
+            padding: 40px 20px;
+            font-size: 14px;
+        }
+        .history-card {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 12px;
+            transition: box-shadow 0.2s;
+        }
+        .history-card:hover {
+            box-shadow: 0 4px 12px rgba(102,126,234,0.13);
+        }
+        .history-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+        .history-shop-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: #2d3748;
+        }
+        .history-total {
+            font-size: 16px;
+            font-weight: 700;
+            color: #e53e3e;
+        }
+        .history-meta {
+            font-size: 12px;
+            color: #718096;
+            margin-bottom: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .history-meta span {
+            background: #edf2f7;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+        .history-items {
+            list-style: none;
+            border-top: 1px dashed #e2e8f0;
+            padding-top: 8px;
+            margin-top: 4px;
+        }
+        .history-item-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: #4a5568;
+            padding: 3px 0;
+        }
+        .history-loading {
+            text-align: center;
+            padding: 30px;
+            color: #667eea;
+            font-size: 14px;
+        }
+        .btn-delete-history {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 2px 4px;
+            border-radius: 6px;
+            opacity: 0.55;
+            transition: opacity 0.2s, transform 0.15s;
+            line-height: 1;
+        }
+        .btn-delete-history:hover {
+            opacity: 1;
+            transform: scale(1.15);
+        }
+        .badge-completed {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            background: linear-gradient(135deg, #38a169, #48bb78);
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 9px;
+            border-radius: 12px;
+            letter-spacing: 0.3px;
+        }
+        .btn-save-shop {
+            display: none; /* 預設隱藏，載入菜單後才顯示 */
+            align-items: center;
+            gap: 5px;
+            padding: 6px 14px;
+            background: linear-gradient(135deg, #38a169, #48bb78);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .btn-save-shop:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(56, 161, 105, 0.4);
+        }
+        
+        /* 儲值卡片 */
+        .swal2-topup-popup {
+            border-radius: 20px;
+        }
+        .topup-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+        }
+        .topup-card:hover {
+            border-color: #667eea;
+            background-color: #f0f4ff;
+        }
+        .topup-card.selected {
+            border-color: #667eea;
+            background-color: #e4ebfb;
+        }
+        .topup-card.recommended {
+            border-color: #75b798;
+            background-color: #f8fffb;
+        }
+        .topup-card.recommended.selected {
+            border-color: #667eea;
+            background-color: #e4ebfb;
+        }
+        .topup-card .tag {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #e23e3e;
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .pay-method {
+            padding: 8px 16px;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            color: #555;
+            transition: all 0.2s;
+        }
+        .pay-method.active {
+            border-color: #333;
+            background: #333;
+            color: #fff;
+        }
+
+        /* ===== 聊天機器人浮動按鈕 ===== */
+        .chat-fab-btn {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            z-index: 1200;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #ffffff;
+            color: #1e293b;
+            border: 2px solid #e2e8f0;
+            font-size: 26px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .chat-fab-btn:hover {
+            transform: scale(1.1);
+            background: #f8fafc;
+            border-color: #cbd5e1;
+            box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
+        }
+        .chat-fab-btn.active {
+            background: #f1f5f9;
+            border-color: #94a3b8;
+            transform: rotate(15deg) scale(1.05);
+        }
+
+        /* ===== 聊天視窗 ===== */
+        .chat-window {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            width: 340px;
+            height: 480px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            z-index: 1199;
+            overflow: hidden;
+            transform: scale(0) translateY(20px);
+            transform-origin: bottom right;
+            transition: transform 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.25s ease;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .chat-window.open {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+        @media (max-width: 400px) {
+            .chat-window {
+                right: 0;
+                left: 0;
+                width: 100%;
+                bottom: 90px;
+                border-radius: 20px 20px 0 0;
+            }
+        }
+
+        /* 聊天視窗 Header */
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        .chat-header-icon {
+            width: 36px;
+            height: 36px;
+            background: rgba(255,255,255,0.25);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        .chat-header-info {
+            flex: 1;
+        }
+        .chat-header-name {
+            font-weight: 700;
+            font-size: 15px;
+        }
+        .chat-header-sub {
+            font-size: 11px;
+            opacity: 0.8;
+            margin-top: 1px;
+        }
+        .chat-header-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px;
+            line-height: 1;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+        .chat-header-close:hover {
+            opacity: 1;
+        }
+
+        /* 訊息區域 */
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 14px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: #f7f8fc;
+        }
+        .chat-messages::-webkit-scrollbar {
+            width: 4px;
+        }
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: #ddd;
+            border-radius: 2px;
+        }
+
+        /* 訊息氣泡 */
+        .chat-bubble-wrap {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+        }
+        .chat-bubble-wrap.user {
+            flex-direction: row-reverse;
+        }
+        .chat-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        .chat-bubble {
+            max-width: 78%;
+            padding: 10px 13px;
+            border-radius: 16px;
+            font-size: 13.5px;
+            line-height: 1.55;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .chat-bubble.bot {
+            background: white;
+            color: #2d3748;
+            border-radius: 4px 16px 16px 16px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }
+        .chat-bubble.user {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 16px 4px 16px 16px;
+        }
+
+        /* 打字中動畫 */
+        .chat-typing {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 10px 14px;
+            background: white;
+            border-radius: 4px 16px 16px 16px;
+            width: fit-content;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }
+        .chat-typing span {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #aaa;
+            animation: chatTypingDot 1.2s infinite ease-in-out;
+        }
+        .chat-typing span:nth-child(1) { animation-delay: 0s; }
+        .chat-typing span:nth-child(2) { animation-delay: 0.2s; }
+        .chat-typing span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes chatTypingDot {
+            0%, 60%, 100% { transform: translateY(0); background: #bbb; }
+            30% { transform: translateY(-6px); background: #667eea; }
+        }
+
+        /* 輸入區域 */
+        .chat-input-area {
+            display: flex;
+            gap: 8px;
+            padding: 10px 12px;
+            border-top: 1px solid #eee;
+            background: white;
+            flex-shrink: 0;
+        }
+        .chat-input {
+            flex: 1;
+            padding: 9px 13px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 20px;
+            font-size: 13.5px;
+            outline: none;
+            transition: border-color 0.2s;
+            resize: none;
+            font-family: inherit;
+        }
+        .chat-input:focus {
+            border-color: #667eea;
+        }
+        .chat-send-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+        .chat-send-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(102,126,234,0.4);
+        }
+        .chat-send-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 歡迎提示 */
+        .chat-welcome {
+            text-align: center;
+            color: #a0aec0;
+            font-size: 12px;
+            padding: 6px 0 4px;
+            line-height: 1.6;
+        }
+
+        /* ===== 語音點餐 ===== */
+        .mic-fab-btn {
+            position: fixed;
+            bottom: 25px;
+            left: 95px; /* 購物車按鈕右邊 */
+            z-index: 999;
+            background: #ffffff;
+            color: #1e293b;
+            border: 2px solid #e2e8f0;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            font-size: 26px;
+            cursor: pointer;
+            display: none; /* 預設隱藏，菜單載入後才顯示 */
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .mic-fab-btn:hover {
+            transform: scale(1.1);
+            background: #f8fafc;
+            border-color: #cbd5e1;
+            box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
+        }
+        .mic-fab-btn.listening {
+            background: #fff5f5;
+            border-color: #fc8181;
+            animation: micPulse 1.2s ease-in-out infinite;
+        }
+        .mic-fab-btn.processing {
+            background: #fffbf0;
+            border-color: #f6ad55;
+            cursor: not-allowed;
+        }
+        @keyframes micPulse {
+            0%   { box-shadow: 0 0 0 0 rgba(252, 129, 129, 0.5); }
+            70%  { box-shadow: 0 0 0 14px rgba(252, 129, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(252, 129, 129, 0); }
+        }
+
+        /* 語音狀態浮動提示 */
+        .voice-toast {
+            position: fixed;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-20px);
+            background: rgba(30, 41, 59, 0.92);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 1300;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease, transform 0.25s ease;
+            max-width: 92vw;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            white-space: pre-wrap;
+            word-break: break-word;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .voice-toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+            pointer-events: auto;
+        }
+        .voice-toast.success { background: rgba(56, 161, 105, 0.95); }
+        .voice-toast.warning { background: rgba(214, 158, 46, 0.95); }
+        .voice-toast.error   { background: rgba(229, 62, 62, 0.95); }
+        .voice-toast-undo {
+            flex-shrink: 0;
+            background: rgba(255,255,255,0.25);
+            border: 1.5px solid rgba(255,255,255,0.6);
+            color: white;
+            font-size: 13px;
+            font-weight: 700;
+            padding: 5px 13px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background 0.18s;
+            white-space: nowrap;
+        }
+        .voice-toast-undo:hover {
+            background: rgba(255,255,255,0.42);
+        }
+
+
+        .category-tabs-container {
+            display: flex;
+            overflow-x: auto;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .category-tabs-container::-webkit-scrollbar {
+            height: 4px;
+        }
+        .category-tabs-container::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 4px;
+        }
+        .category-tab {
+            padding: 8px 16px;
+            background: #edf2f7;
+            border: 1px solid #cbd5e0;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #4a5568;
+            white-space: nowrap;
+            transition: all 0.2s;
+            user-select: none;
+        }
+        .category-tab:hover {
+            background: #e2e8f0;
+        }
+        .category-tab.active {
+            background: #667eea;
+            color: white;
+            border-color: #5a67d8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="title" onclick="goHomeOrderingView()" title="回到點餐介面">🍔 好棒棒點餐</div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div class="balance-container" style="display:flex; align-items:center; background: rgba(255,255,255,0.2); border-radius:20px; padding:6px 12px; font-weight:600; cursor:pointer;" onclick="openTopUpModal()">
+                    <span style="font-size: 14px; margin-right: 6px;">餘額: $</span><span id="userBalanceDisplay">0</span>
+                    <button style="margin-left: 8px; background: #fff; color: #667eea; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); pointer-events: none;">+</button>
+                </div>
+                <button class="cart-icon-btn" id="cartIconBtn">
+                    🛒
+                    <span class="cart-badge" id="cartBadge" style="display: none;">0</span>
+                </button>
+                <button class="btn-history" id="historyBtn" onclick="openHistory()" style="display:none;">
+                    📜 歷史訂單
+                </button>
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <img id="userAvatar" src="" alt="用户頭像">
+                    </div>
+                    <div class="user-name" id="userName">加載中...</div>
+                </div>
+            </div>
+        </div>
+        <div class="content">
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <p>辨識菜單中...</p>
+            </div>
+            
+            <div class="main-layout">
+                <!-- 左側：個人專屬店家庫 -->
+                <div class="user-shops-sidebar" id="userShopsSidebar">
+                    <div class="shops-header">
+                        <span>🏪 我的店家庫</span>
+                    </div>
+                    <div id="userShopsList" class="user-shops-list">
+                        <div class="no-shops-msg">載入中...</div>
+                    </div>
+                </div>
+
+                <!-- 右側：主要菜單點餐區域 -->
+                <div class="menu-main-area">
+                    <div id="menuContent" style="display: none;">
+                        <div class="menu-section">
+                            <div class="menu-title" style="display:flex; align-items:center; justify-content:space-between;">
+                                <span>📋 菜單</span>
+                                <div style="display:flex; gap:8px; align-items:center;">
+                                    <button class="btn-save-shop" id="saveShopBtn" onclick="saveCurrentShop()">
+                                        💾 儲存店家
+                                    </button>
+                                    <button class="btn-save-shop" id="backToOrderBtn" onclick="goHomeOrderingView()" style="display:none; background:linear-gradient(135deg,#667eea,#764ba2);">
+                                        🍔 回到點餐
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="closedStatusBanner" class="closed-banner" style="display: none;"></div>
+                            <div id="myOrderSummaryCard" class="my-order-summary-card" style="display: none;"></div>
+                            <div id="shopNameDisplay" style="margin-bottom: 12px; font-size: 16px; font-weight: 600; color: #444;"></div>
+                            <div id="menuSearchContainer" style="margin-bottom: 15px;">
+                                <input type="text" id="menuSearchInput" placeholder="🔍 搜尋餐點名稱..." style="width: 100%; padding: 10px 15px; border: 1px solid #cbd5e0; border-radius: 8px; font-size: 15px; outline: none; transition: border-color 0.2s;">
+                            </div>
+                            <div id="categoryTabs" class="category-tabs-container"></div>
+                            <ul class="menu-list" id="menuList">
+                            </ul>
+                            <!-- 菜單下方送出訂單列 -->
+                            <div class="bottom-submit-bar" id="bottomSubmitBar">
+                                <button class="submit-btn" id="bottomSubmitBtn">📤 送出訂單</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="errorContent" style="display: none;">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 歷史訂單 Modal -->
+            <div class="history-overlay" id="historyModal">
+                <div class="history-modal">
+                    <div class="history-modal-header">
+                        <div class="history-modal-title">📜 我的歷史訂單</div>
+                        <button class="modal-close-btn" onclick="closeHistory()">✕</button>
+                    </div>
+                    <div id="historyContent"><div class="history-loading">載入中...</div></div>
+                </div>
+            </div>
+
+            <!-- 購物車 Modal -->
+            <div class="modal-overlay" id="cartModal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <div class="modal-title">🛒 購物車</div>
+                        <button class="modal-close-btn" id="cartCloseBtn">✕</button>
+                    </div>
+                    <ul class="cart-items-list" id="cartItemsList"></ul>
+                    <div class="empty-cart-msg" id="emptyCartMsg">購物車是空的，請選擇餐點</div>
+                    <div id="cartSummaryDiv" style="display: none;">
+                        <div class="cart-summary">
+                            <span class="cart-summary-label">總計：</span>
+                            <span class="cart-summary-total" id="cartTotal">$0</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; margin-top: 8px; color: #319795;">
+                            <span>我的餘額：</span>
+                            <span id="cartBalanceDisplay">$0</span>
+                        </div>
+                    </div>
+                    <button class="submit-btn" id="submitOrderBtn" style="margin-top: 12px;">📤 送出訂單</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 購物車數據儲存
+        let cart = {};
+        let menuDataGlobal = [];
+        let userIdGlobal = '';
+        let userNameGlobal = '';  // LINE 用戶名
+        let groupIdGlobal = '';
+        let sessionIdGlobal = '';
+        let shopNameGlobal = '';
+        let hasSubmittedOrder = false;  // 是否已送出訂單
+        let currentOrder = null;  // 當前訂單
+        let isSessionClosedGlobal = false; // 是否已結單
+        let initiatorIdGlobal = ''; // 團購發起人 ID
+        
+        // ===== 儲值金錢包 =====
+        async function fetchUserBalance() {
+            if (!userIdGlobal) return;
+            try {
+                const res = await fetch(`/api/user-balance/${userIdGlobal}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('userBalanceDisplay').textContent = data.balance || 0;
+                }
+            } catch (e) {
+                console.error('取得餘額失敗:', e);
+            }
+        }
+
+        function openTopUpModal() {
+            if (!userIdGlobal) {
+                Swal.fire({ icon: 'error', title: '錯誤', text: '請先登入' });
+                return;
+            }
+            
+            const currentBalance = document.getElementById('userBalanceDisplay').textContent;
+            
+            Swal.fire({
+                title: '儲值金錢包 (Stored Value Wallet)',
+                html: `
+                    <div style="font-size:24px; font-weight:bold; margin-bottom: 20px;">
+                        餘額: $${currentBalance}
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+                        <div class="topup-card" onclick="selectTopup(this, 200)">
+                            <div style="font-size:20px; font-weight:bold;">$200</div>
+                            <div style="font-size:12px; color:#666;">獲得 $200 (送 $0)</div>
+                        </div>
+                        <div class="topup-card" onclick="selectTopup(this, 525)">
+                            <div style="font-size:20px; font-weight:bold;">$500</div>
+                            <div style="font-size:12px; color:#666;">獲得 $525 (送 $25)</div>
+                        </div>
+                        <div class="topup-card recommended" onclick="selectTopup(this, 1120)">
+                            <div class="tag">推薦</div>
+                            <div style="font-size:20px; font-weight:bold;">$1,000</div>
+                            <div style="font-size:12px; color:#666;">獲得 $1,120 (送 $120)</div>
+                        </div>
+                        <div class="topup-card recommended" onclick="selectTopup(this, 2300)">
+                            <div class="tag">推薦</div>
+                            <div style="font-size:20px; font-weight:bold;">$2,000</div>
+                            <div style="font-size:12px; color:#666;">獲得 $2,300 (送 $300)</div>
+                        </div>
+                        <div class="topup-card" onclick="selectTopup(this, 5900)">
+                            <div style="font-size:20px; font-weight:bold;">$5,000</div>
+                            <div style="font-size:12px; color:#666;">獲得 $5,900 (送 $900)</div>
+                        </div>
+                        <div class="topup-card" onclick="selectTopup(this, 12000)">
+                            <div style="font-size:20px; font-weight:bold;">$10,000</div>
+                            <div style="font-size:12px; color:#666;">獲得 $12,000 (送 $2,000)</div>
+                        </div>
+                    </div>
+                    <div style="text-align: left; font-weight: bold; margin-bottom: 10px;">付款方式</div>
+                    <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 20px;">
+                        <div class="pay-method active">Apple Pay</div>
+                        <div class="pay-method">VISA</div>
+                        <div class="pay-method">LINE Pay</div>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: '立即儲值',
+                cancelButtonText: '取消',
+                confirmButtonColor: '#667eea',
+                customClass: {
+                    popup: 'swal2-topup-popup'
+                },
+                didOpen: () => {
+                    window.selectedTopupAmount = undefined;
+                    
+                    document.querySelectorAll('.pay-method').forEach(btn => {
+                        btn.onclick = (e) => {
+                            document.querySelectorAll('.pay-method').forEach(b => b.classList.remove('active'));
+                            e.target.classList.add('active');
+                        };
+                    });
+                },
+                preConfirm: () => {
+                    if (!window.selectedTopupAmount) {
+                        Swal.showValidationMessage('請選擇儲值金額');
+                        return false;
+                    }
+                    return window.selectedTopupAmount;
+                }
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        Swal.fire({ title: '儲值中...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                        const res = await fetch('/api/user-balance/topup', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ user_id: userIdGlobal, amount: result.value })
+                        });
+                        const data = await res.json();
+                        if (res.ok) {
+                            document.getElementById('userBalanceDisplay').textContent = data.new_balance;
+                            Swal.fire({ icon: 'success', title: '儲值成功', text: `目前餘額: $${data.new_balance}`, confirmButtonColor: '#667eea' });
+                        } else {
+                            Swal.fire({ icon: 'error', title: '儲值失敗', text: data.error || '未知錯誤' });
+                        }
+                    } catch (e) {
+                        Swal.fire({ icon: 'error', title: '錯誤', text: '網路錯誤' });
+                    }
+                }
+            });
+        }
+
+        window.selectTopup = function(el, amount) {
+            document.querySelectorAll('.topup-card').forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+            window.selectedTopupAmount = amount;
+        }
+        
+        // ===== 歷史訂單 =====
+        function openHistory() {
+            const modal = document.getElementById('historyModal');
+            modal.classList.add('show');
+            loadHistory();
+        }
+
+        function closeHistory() {
+            document.getElementById('historyModal').classList.remove('show');
+        }
+
+        async function loadHistory() {
+            const container = document.getElementById('historyContent');
+            if (!userIdGlobal) {
+                container.innerHTML = '<div class="history-empty">⚠️ 無法取得用戶資訊，請重新整理</div>';
+                return;
+            }
+            container.innerHTML = '<div class="history-loading">⏳ 載入中...</div>';
+            try {
+                const res = await fetch(`/api/order-history/${userIdGlobal}`);
+                const data = await res.json();
+                const history = data.history || [];
+                if (history.length === 0) {
+                    container.innerHTML = '<div class="history-empty">📭 目前還沒有歷史訂單紀錄<br><small>完成一次團購後即會顯示</small></div>';
+                    return;
+                }
+                let html = '';
+                history.forEach(record => {
+                    const shopName = record.shop_name || '未知店家';
+                    const total = record.total || 0;
+                    const groupTotal = record.group_total || 0;
+                    const initiator = record.initiator_name || '發起人';
+                    const groupName = record.group_name || '';
+                    const groupId = record.group_id ? record.group_id.slice(-6) : '';
+                    const groupDisplay = groupName || (groupId ? `...${groupId}` : '');
+                    const items = Array.isArray(record.items) ? record.items : [];
+                    let timeStr = '';
+                    if (record.completed_at) {
+                        try {
+                            const d = new Date(record.completed_at);
+                            timeStr = d.toLocaleString('zh-TW', {
+                                year: 'numeric', month: '2-digit', day: '2-digit',
+                                hour: '2-digit', minute: '2-digit'
+                            });
+                        } catch(e) { timeStr = record.completed_at; }
+                    }
+                    const itemsHtml = items.map(it => {
+                        const name = it.item || it.item_name || it.name || '餐點';
+                        const qty = it.quantity || it.qty || 1;
+                        const price = it.price || 0;
+                        return `<li class="history-item-row">
+                            <span>${name} × ${qty}</span>
+                            <span>$${price * qty}</span>
+                        </li>`;
+                    }).join('');
+
+                    const docId = record.doc_id || '';
+                    html += `
+                    <div class="history-card" id="hcard-${docId}">
+                        <div class="history-card-header">
+                            <div class="history-shop-name">🏪 ${shopName}</div>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <div class="history-total">$${total}</div>
+                                ${docId ? `<button class="btn-delete-history" onclick="deleteHistoryRecord('${docId}')" title="移除此紀錄">🗑️</button>` : ''}
+                            </div>
+                        </div>
+                        <div class="history-meta">
+                            <span>👑 ${initiator}</span>
+                            ${groupDisplay ? `<span>📍 ${groupDisplay}</span>` : ''}
+                            ${timeStr ? `<span>🕒 ${timeStr}</span>` : ''}
+                        </div>
+                        <ul class="history-items">${itemsHtml || '<li class="history-item-row"><span>（無餐點明細）</span></li>'}</ul>
+                    </div>`;
+                });
+                container.innerHTML = html;
+            } catch(err) {
+                console.error('載入歷史訂單失敗:', err);
+                container.innerHTML = '<div class="history-empty">❌ 載入失敗，請稍後再試</div>';
+            }
+        }
+
+        // 刪除單筆歷史訂單
+        async function deleteHistoryRecord(docId) {
+            if (!confirm('確定要移除這筆歷史訂單紀錄嗎？')) return;
+            try {
+                const res = await fetch(`/api/order-history/${userIdGlobal}/${docId}`, { method: 'DELETE' });
+                if (res.ok) {
+                    const el = document.getElementById(`hcard-${docId}`);
+                    if (el) {
+                        el.style.transition = 'opacity 0.3s';
+                        el.style.opacity = '0';
+                        setTimeout(() => el.remove(), 300);
+                    }
+                } else {
+                    alert('❌ 刪除失敗，請稍後再試');
+                }
+            } catch(err) {
+                console.error('刪除歷史訂單失敗:', err);
+                alert('❌ 刪除失敗');
+            }
+        }
+
+        // 點擊背景關閉歷史 Modal
+        document.getElementById('historyModal').addEventListener('click', function(e) {
+            if (e.target === this) closeHistory();
+        });
+
+        function addToCart(itemName, itemPrice) {
+            if (cart[itemName]) {
+                cart[itemName].quantity++;
+            } else {
+                cart[itemName] = {
+                    price: itemPrice,
+                    quantity: 1
+                };
+            }
+            updateCartDisplay();
+        }
+        
+        function removeFromCart(itemName) {
+            if (isSessionClosedGlobal) {
+                alert('🔒 本次團購已結單，無法移除購物車餐點');
+                return;
+            }
+            delete cart[itemName];
+            updateCartDisplay();
+        }
+        
+        function updateQuantity(itemName, delta) {
+            if (isSessionClosedGlobal) {
+                alert('🔒 本次團購已結單，無法調整點餐數量');
+                return;
+            }
+            if (!cart[itemName]) {
+                const itemPrice = menuDataGlobal.find(item => {
+                    const name = item.item_name || item.name || item.品項名稱;
+                    return name === itemName;
+                })?.price || 0;
+                
+                if (delta > 0) {
+                    cart[itemName] = {
+                        price: itemPrice,
+                        quantity: delta
+                    };
+                }
+            } else {
+                cart[itemName].quantity += delta;
+                if (cart[itemName].quantity <= 0) {
+                    delete cart[itemName];
+                }
+            }
+            updateCartDisplay();
+        }
+        
+        function updateCartDisplay() {
+            const cartItemsList = document.getElementById('cartItemsList');
+            const emptyCartMsg = document.getElementById('emptyCartMsg');
+            const cartSummaryDiv = document.getElementById('cartSummaryDiv');
+            const cartBadge = document.getElementById('cartBadge');
+            const submitBtn = document.getElementById('submitOrderBtn');
+            
+            const qtyElements = document.querySelectorAll('.quantity-display');
+            qtyElements.forEach(element => {
+                const itemName = element.getAttribute('data-item-name');
+                element.textContent = cart[itemName]?.quantity || 0;
+            });
+            
+            cartItemsList.innerHTML = '';
+            let total = 0;
+            let itemCount = 0;
+            
+            for (const [itemName, itemData] of Object.entries(cart)) {
+                itemCount++;
+                const subtotal = itemData.price * itemData.quantity;
+                total += subtotal;
+                
+                const li = document.createElement('li');
+                li.className = 'cart-item';
+                const safeName = itemName.replace(/'/g, "\\'");
+                const removeBtnAttr = isSessionClosedGlobal ? 'disabled style="background:#ccc;cursor:not-allowed;"' : '';
+                li.innerHTML = `
+                    <div class="cart-item-info">
+                        <div class="cart-item-name">${itemName}</div>
+                        <div class="cart-item-qty">$${itemData.price} × ${itemData.quantity}</div>
+                    </div>
+                    <div class="cart-item-price">$${subtotal}</div>
+                    <button class="cart-item-remove" data-item-name="${itemName}" ${removeBtnAttr} onclick="removeFromCart('${safeName}')">移除</button>
+                `;
+                cartItemsList.appendChild(li);
+            }
+            
+            if (itemCount === 0) {
+                emptyCartMsg.style.display = 'block';
+                cartSummaryDiv.style.display = 'none';
+                cartBadge.style.display = 'none';
+            } else {
+                emptyCartMsg.style.display = 'none';
+                cartSummaryDiv.style.display = 'block';
+                document.getElementById('cartTotal').textContent = '$' + total;
+                document.getElementById('cartBalanceDisplay').textContent = '$' + (document.getElementById('userBalanceDisplay').textContent || '0');
+                cartBadge.textContent = itemCount;
+                cartBadge.style.display = 'flex';
+            }
+
+            if (submitBtn) {
+                submitBtn.onclick = submitOrder;
+                if (isSessionClosedGlobal) {
+                    submitBtn.style.display = 'none'; // 結單後隱藏購物車送出鈕
+                } else {
+                    submitBtn.style.display = 'block';
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = hasSubmittedOrder ? '📤 更新訂單' : '📤 送出訂單';
+                }
+            }
+
+            // 同步底部固定送出按鈕
+            const bottomBar = document.getElementById('bottomSubmitBar');
+            const bottomBtn = document.getElementById('bottomSubmitBtn');
+            if (bottomBtn && bottomBar) {
+                bottomBtn.onclick = submitOrder;
+                if (isSessionClosedGlobal) {
+                    // 結單後隱藏（訂單明細卡片會取代它）
+                    bottomBar.style.display = 'none';
+                } else {
+                    // 未結單時永遠顯示
+                    bottomBar.style.display = 'block';
+                    bottomBtn.disabled = false;
+                    bottomBtn.textContent = hasSubmittedOrder ? '📤 更新訂單' : '📤 送出訂單';
+                }
+            }
+        }
+        
+        // 顯示並自動帶入已送出的歷史訂單明細至選單
+        function showOrderDetails(order) {
+            hasSubmittedOrder = true;
+            currentOrder = order;
+            
+            if (order && order.shop_name) {
+                document.getElementById('shopNameDisplay').textContent = `店家：${order.shop_name}`;
+            }
+
+            // 自動將歷史訂單品項載入購物車與數量選單中
+            cart = {};
+            if (order && order.items) {
+                order.items.forEach(item => {
+                    const itemName = item.item || item.name;
+                    const itemPrice = parseInt(item.price || 0);
+                    const itemQty = parseInt(item.quantity || 0);
+                    if (itemName && itemQty > 0) {
+                        cart[itemName] = {
+                            price: itemPrice,
+                            quantity: itemQty
+                        };
+                    }
+                });
+            }
+
+            // 即時同步呈現選單數量與購物車明細
+            updateCartDisplay();
+        }
+        
+        function openCart() {
+            updateCartDisplay();
+            document.getElementById('cartModal').classList.add('show');
+        }
+        
+        function closeCart() {
+            document.getElementById('cartModal').classList.remove('show');
+        }
+        
+        async function submitOrder() {
+            if (isSessionClosedGlobal) {
+                alert('🔒 本次團購已結單，無法送出或修改訂單！');
+                return;
+            }
+
+            const isEmpty = Object.keys(cart).length === 0;
+
+            // 購物車空且沒有歷史訂單 → 不需送出
+            if (isEmpty && !hasSubmittedOrder) {
+                alert('購物車是空的，請選擇餐點');
+                return;
+            }
+
+            const userTotal = Object.entries(cart).reduce((sum, [, item]) => sum + (item.price * item.quantity), 0);
+            const currentBalance = parseInt(document.getElementById('userBalanceDisplay').textContent || 0);
+            const previousTotal = currentOrder ? (currentOrder.total || 0) : 0;
+            const diff = userTotal - previousTotal;
+
+            if (diff > 0 && currentBalance < diff) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: '餘額不足',
+                    text: `您欲新增 $${diff} 的餐點，但餘額只有 $${currentBalance}`,
+                    showCancelButton: true,
+                    confirmButtonText: '前往儲值',
+                    cancelButtonText: '關閉',
+                    confirmButtonColor: '#75b798'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        openTopUpModal();
+                    }
+                });
+                return;
+            }
+
+            const submitBtn = document.getElementById('submitOrderBtn');
+            const bottomBtn = document.getElementById('bottomSubmitBtn');
+            const loadingText = isEmpty ? '🗑️ 清除中...' : '📤 送出中...';
+            if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = loadingText; }
+            if (bottomBtn) { bottomBtn.disabled = true; bottomBtn.textContent = loadingText; }
+
+            try {
+                const response = await fetch('/api/order', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        session_id: sessionIdGlobal,
+                        group_id: groupIdGlobal,
+                        user_id: userIdGlobal,
+                        user_name: userNameGlobal,
+                        shop_name: shopNameGlobal,
+                        order_items: cart
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (data.new_balance !== undefined) {
+                        document.getElementById('userBalanceDisplay').textContent = data.new_balance;
+                    }
+
+                    if (data.status === 'cleared') {
+                        // 購物車為空 → 訂單已從資料庫刪除，重置 UI
+                        alert('✅ 您的訂單已清除');
+                        hasSubmittedOrder = false;
+                        currentOrder = null;
+                        cart = {};
+                        document.getElementById('shopNameDisplay').textContent = '';
+                        updateCartDisplay();
+                    } else {
+                        alert(`✅ 訂單已${hasSubmittedOrder ? '更新' : '送出'}！\n你的小計: $${data.user_total}\n群組總計: $${data.group_total}\n已點餐人數: ${data.user_count}`);
+
+                        // 保存訂單
+                        currentOrder = {
+                            shop_name: shopNameGlobal,
+                            items: Object.entries(cart).map(([name, item]) => ({
+                                item: name,
+                                price: item.price,
+                                quantity: item.quantity,
+                                subtotal: item.price * item.quantity
+                            })),
+                            total: Object.entries(cart).reduce((sum, [, item]) => sum + (item.price * item.quantity), 0)
+                        };
+
+                        showOrderDetails(currentOrder);
+                        closeCart();
+                    }
+                } else {
+                    const errorData = await response.json();
+                    alert('❌ 送出訂單失敗: ' + (errorData.error || '未知錯誤'));
+                }
+            } catch (error) {
+                console.error('送出訂單錯誤:', error);
+                alert('❌ 送出訂單失敗: ' + error.message);
+            } finally {
+                updateCartDisplay(); // 重新同步兩個按鈕狀態
+            }
+        }
+
+        
+        // 點擊左上角「好棒棒點餐」標題回到點餐/首頁介面
+        async function goHomeOrderingView() {
+            console.log('[Header Logo] 點擊回到點餐介面');
+            
+            // 1. 若購物車彈窗開啟中則先關閉
+            closeCart();
+
+            // 2. 若存在團購 Session，重新取得與呈現團購菜單
+            if (sessionIdGlobal) {
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('menuContent').style.display = 'none';
+                document.getElementById('errorContent').style.display = 'none';
+
+                try {
+                    const response = await fetch('/api/recognize', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({session_id: sessionIdGlobal})
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.status === 'completed' && data.menu) {
+                            displayMenu(data.menu);
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                            return;
+                        }
+                    }
+                } catch (err) {
+                    console.error('重新載入團購菜單錯誤:', err);
+                }
+            }
+
+            // 3. 若有歷史載入過的點餐菜單，立刻開啟並回到頂部
+            if (menuDataGlobal && menuDataGlobal.length > 0) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('errorContent').style.display = 'none';
+                document.getElementById('menuContent').style.display = 'block';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+
+            // 4. 若當前已有選擇特定店家，切換至該店家點餐/編輯介面
+            if (currentEditingShop) {
+                selectShopToEdit(currentEditingShop);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+
+            // 5. 若無任何紀錄，重新執行 initLiff
+            initLiff();
+        }
+        
+        // 檢查用戶是否已有訂單 (包含 session 綁定)
+        async function checkExistingOrder() {
+            try {
+                if (!groupIdGlobal || !userIdGlobal) {
+                    renderClosedStateUI();
+                    return;
+                }
+
+                // 有 session_id → 只查當前 session，不撈舊資料
+                if (sessionIdGlobal) {
+                    const url = `/api/order/${groupIdGlobal}/${userIdGlobal}?session_id=${encodeURIComponent(sessionIdGlobal)}`;
+                    const response = await fetch(url);
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.status === 'found') {
+                            // 此 session 本人已點過 → 帶入
+                            showOrderDetails(data.order);
+                            renderClosedStateUI();
+                            return;
+                        }
+                    }
+                    // 此 session 查無訂單 → 確保購物車乾淨
+                    cart = {};
+                    hasSubmittedOrder = false;
+                    currentOrder = null;
+                    updateCartDisplay();
+                    renderClosedStateUI();
+                    return;
+                }
+
+                // 無 session_id（舊版相容）
+                const url = `/api/order/${groupIdGlobal}/${userIdGlobal}`;
+                const response = await fetch(url);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.status === 'found') {
+                        showOrderDetails(data.order);
+                        renderClosedStateUI();
+                        return;
+                    }
+                }
+                hasSubmittedOrder = false;
+                currentOrder = null;
+                renderClosedStateUI();
+            } catch (error) {
+                console.error('檢查訂單錯誤:', error);
+                renderClosedStateUI();
+            }
+        }
+
+        // 渲染結單與訂單顯示 UI 狀態
+        function renderClosedStateUI() {
+            const closedBannerEl = document.getElementById('closedStatusBanner');
+            const myOrderCardEl = document.getElementById('myOrderSummaryCard');
+
+            if (!isSessionClosedGlobal) {
+                if (closedBannerEl) closedBannerEl.style.display = 'none';
+                if (myOrderCardEl) myOrderCardEl.style.display = 'none';
+                document.querySelectorAll('.quantity-btn').forEach(btn => btn.disabled = false);
+                return;
+            }
+
+            // 結單狀態：禁用選單點餐按鈕
+            document.querySelectorAll('.quantity-btn').forEach(btn => btn.disabled = true);
+            const submitBtn = document.getElementById('submitOrderBtn');
+
+            if (hasSubmittedOrder && currentOrder) {
+                // 已結單 + 有訂購餐點 -> 顯示自己訂購的餐點明細
+                if (closedBannerEl) {
+                    closedBannerEl.className = 'closed-banner success';
+                    closedBannerEl.innerHTML = '🔒 本次團購已結單！以下是您訂購的餐點明細：';
+                    closedBannerEl.style.display = 'block';
+                }
+
+                if (myOrderCardEl) {
+                    let itemsHtml = '';
+                    if (currentOrder.items && currentOrder.items.length > 0) {
+                        currentOrder.items.forEach(item => {
+                            const name = item.item || item.name;
+                            itemsHtml += `<li class="my-order-item">
+                                <span>${name} × ${item.quantity}</span>
+                                <span style="font-weight: 600;">$${item.subtotal}</span>
+                            </li>`;
+                        });
+                    }
+                    myOrderCardEl.innerHTML = `
+                        <div class="my-order-header">
+                            <span style="font-size: 15px; font-weight: 700; color: #2d3748;">👤 您訂購的餐點明細</span>
+                            <span id="orderCompletedBadge" style="font-size: 12px; color: #319795; font-weight: bold;">(已結單鎖定)</span>
+                        </div>
+                        <ul class="my-order-list">${itemsHtml}</ul>
+                        <div class="my-order-total">
+                            <span>總額：</span>
+                            <span style="font-size: 18px; color: #e53e3e;">$${currentOrder.total || 0}</span>
+                        </div>
+                    `;
+                    myOrderCardEl.style.display = 'block';
+
+                    // 非同步確認此 session 是否已 完成 歸檔
+                    if (sessionIdGlobal && userIdGlobal) {
+                        startCompletedPolling();
+                    }
+                }
+
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = '🔒 已結單無法修改訂單';
+                }
+            } else {
+                // 已結單 + 沒點餐 -> 顯示 已結單無法點餐
+                if (closedBannerEl) {
+                    closedBannerEl.className = 'closed-banner danger';
+                    closedBannerEl.innerHTML = `
+                        <div style="font-size: 18px; font-weight: 700;">🔒 已結單無法點餐</div>
+                        <div style="font-size: 13px; margin-top: 5px; color: #9b2c2c;">
+                            本次團購已由發起人宣佈結單，目前無法新增或點選餐點。
+                        </div>
+                    `;
+                    closedBannerEl.style.display = 'block';
+                }
+                if (myOrderCardEl) {
+                    myOrderCardEl.style.display = 'none';
+                }
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = '🔒 已結單無法點餐';
+                }
+            }
+        }
+
+        let sessionPollTimer = null;
+        let completedPollTimer = null;
+
+        // AJAX 輪詢檢查團購 Session 結單狀態（持續偵測，支援結單 ↔ 取消結單雙向更新）
+        function startSessionPolling() {
+            if (!sessionIdGlobal) return;
+            if (sessionPollTimer) clearInterval(sessionPollTimer);
+
+            sessionPollTimer = setInterval(async () => {
+                try {
+                    const res = await fetch(`/api/session-status/${encodeURIComponent(sessionIdGlobal)}`);
+                    if (!res.ok) return;
+                    const data = await res.json();
+
+                    if (data.is_closed && !isSessionClosedGlobal) {
+                        // 狀態從「開放」→「結單」
+                        console.log('🔒 [AJAX] 偵測到已結單，自動更新介面！');
+                        isSessionClosedGlobal = true;
+                        checkExistingOrder();
+                        startCompletedPolling();
+
+                    } else if (!data.is_closed && isSessionClosedGlobal) {
+                        // 狀態從「結單」→「取消結單」
+                        console.log('🔓 [AJAX] 偵測到取消結單，自動恢復點餐模式！');
+                        isSessionClosedGlobal = false;
+                        clearInterval(completedPollTimer); // 停止完成輪詢
+                        resetToOrderingUI();
+                    }
+                } catch (err) {
+                    console.error('輪詢 Session 狀態失敗:', err);
+                }
+            }, 3000); // 每 3 秒持續偵測
+        }
+
+        // 取消結單後將 UI 重置回可點餐狀態
+        function resetToOrderingUI() {
+            // 隱藏結單橫幅與訂單明細卡
+            const closedBanner = document.getElementById('closedStatusBanner');
+            const myOrderCard = document.getElementById('myOrderSummaryCard');
+            if (closedBanner) closedBanner.style.display = 'none';
+            if (myOrderCard) myOrderCard.style.display = 'none';
+
+            // 重新啟用所有點餐按鈕
+            document.querySelectorAll('.quantity-btn').forEach(btn => btn.disabled = false);
+
+            // 重新啟用送出訂單按鈕
+            const submitBtn = document.getElementById('submitOrderBtn');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '📤 送出訂單';
+                submitBtn.onclick = submitOrder;
+            }
+
+            // 顯示取消結單提示橫幅（短暫顯示後消失）
+            if (closedBanner) {
+                closedBanner.className = 'closed-banner';
+                closedBanner.style.background = 'linear-gradient(135deg, #38a169, #48bb78)';
+                closedBanner.style.color = 'white';
+                closedBanner.innerHTML = '🔓 結單已取消！您現在可以修改或新增訂單。';
+                closedBanner.style.display = 'block';
+                setTimeout(() => { closedBanner.style.display = 'none'; }, 5000);
+            }
+
+            // 重新檢查訂單（帶入之前已點的品項到購物車）
+            checkExistingOrder();
+        }
+
+        // AJAX 輪詢檢查團購完成狀態，結單後自動偵測發起人是否發了 完成 指令
+        function startCompletedPolling() {
+            if (!sessionIdGlobal || !userIdGlobal) return;
+            if (completedPollTimer) clearInterval(completedPollTimer);
+
+            completedPollTimer = setInterval(async () => {
+                // 若已取消結單，停止完成輪詢
+                if (!isSessionClosedGlobal) {
+                    clearInterval(completedPollTimer);
+                    return;
+                }
+                try {
+                    const res = await fetch(`/api/session-completed/${userIdGlobal}/${encodeURIComponent(sessionIdGlobal)}`);
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    if (data.completed) {
+                        console.log('✅ [AJAX] 側測到團購已完成，更新徽章！');
+                        clearInterval(completedPollTimer);
+                        const badge = document.getElementById('orderCompletedBadge');
+                        if (badge) {
+                            badge.innerHTML = '<span class="badge-completed">✅ 已完成</span>';
+                        }
+                    }
+                } catch (err) {
+                    console.error('輪詢完成狀態失敗:', err);
+                }
+            }, 4000); // 每 4 秒檢查一次
+        }
+        
+
+        function displayMenu(menuData) {
+            document.getElementById('loading').style.display = 'none';
+            
+            if (!menuData) {
+                document.getElementById('errorContent').style.display = 'block';
+                document.getElementById('errorContent').innerHTML = (
+                    '<div class="error">' +
+                    'ℹ️ 未載入特定團購菜單數據<br>' +
+                    '<small style="font-size:12px;color:#666;margin-top:6px;display:block;">' +
+                    '• 您可以直接在<b>左側「我的店家庫」</b>點擊查看與編輯您的專屬菜單。<br>' +
+                    '• 或於 LINE 聊天室輸入<b>「@機器人 團購 店家名稱」</b>重新發起團購喔！' +
+                    '</small></div>'
+                );
+                return;
+            }
+
+            try {
+                let items = menuData;
+                console.log('[DEBUG] 初始 menuData:', menuData);
+                
+                if (typeof menuData === 'string') {
+                    items = JSON.parse(menuData);
+                }
+
+                const shopName = items?.shop_name || items?.store_name || items?.店家名稱 || '';
+                shopNameGlobal = shopName;
+                const shopNameDisplay = document.getElementById('shopNameDisplay');
+                shopNameDisplay.textContent = shopName ? `店家：${shopName}` : '';
+
+                if (!Array.isArray(items)) {
+                    items = items.menu_items || items.items || items.menu || [];
+                    console.log('[DEBUG] 提取後的 items:', items);
+                }
+
+                if (!items || items.length === 0) {
+                    document.getElementById('errorContent').style.display = 'block';
+                    document.getElementById('errorContent').innerHTML = '<div class="error">❌ 菜單為空或無法識別</div>';
+                    return;
+                }
+
+                // ✅ 開新團購 — 清空購物車、訂單狀態、結單狀態
+                cart = {};
+                hasSubmittedOrder = false;
+                currentOrder = null;
+                isSessionClosedGlobal = false;
+                updateCartDisplay();
+
+                // 隱藏上次殘留的結單 UI
+                const closedBanner = document.getElementById('closedStatusBanner');
+                const myOrderCard = document.getElementById('myOrderSummaryCard');
+                if (closedBanner) closedBanner.style.display = 'none';
+                if (myOrderCard) myOrderCard.style.display = 'none';
+                // 重新啟用點餐按鈕
+                document.querySelectorAll('.quantity-btn').forEach(btn => btn.disabled = false);
+
+                menuDataGlobal = items;
+                const menuList = document.getElementById('menuList');
+                menuList.innerHTML = '';
+                
+                // 依分類進行分組
+                const groupedItems = {};
+                items.forEach(item => {
+                    const category = item.category || '未分類';
+                    if (!groupedItems[category]) {
+                        groupedItems[category] = [];
+                    }
+                    groupedItems[category].push(item);
+                });
+
+                const categoryTabsContainer = document.getElementById('categoryTabs');
+                if (categoryTabsContainer) categoryTabsContainer.innerHTML = '';
+                
+                let globalIndex = 0;
+                let firstCategory = null;
+
+                for (const [category, catItems] of Object.entries(groupedItems)) {
+                    if (!firstCategory) firstCategory = category;
+                    
+                    if (categoryTabsContainer) {
+                        const tabBtn = document.createElement('div');
+                        tabBtn.className = 'category-tab';
+                        tabBtn.textContent = category;
+                        tabBtn.onclick = () => {
+                            // Update active tab
+                            document.querySelectorAll('.category-tab').forEach(btn => btn.classList.remove('active'));
+                            tabBtn.classList.add('active');
+                            
+                            // Show related items
+                            document.querySelectorAll('.menu-item').forEach(item => {
+                                if (item.dataset.category === category) {
+                                    item.style.display = 'flex';
+                                } else {
+                                    item.style.display = 'none';
+                                }
+                            });
+                        };
+                        if (category === firstCategory) {
+                            tabBtn.classList.add('active');
+                        }
+                        categoryTabsContainer.appendChild(tabBtn);
+                    }
+
+                    // 加入該分類的品項
+                    catItems.forEach((item) => {
+                        const li = document.createElement('li');
+                        li.className = 'menu-item';
+                        li.dataset.category = category; // Mark category for filtering
+                        li.style.display = category === firstCategory ? 'flex' : 'none'; // Only show first category initially
+                        
+                        const itemName = item.item_name || item.name || item.品項名稱 || '未知品項';
+                        const itemPrice = parseInt(item.price || item.價格 || item.價錢 || 0);
+                        const itemId = `qty-item-${globalIndex}`;
+                        globalIndex++;
+                        
+                        li.innerHTML = `
+                            <div class="menu-item-container">
+                                <div class="menu-item-info">
+                                    <span class="item-name">${itemName}</span>
+                                    <span class="item-price">$${itemPrice}</span>
+                                </div>
+                                <div class="quantity-controls">
+                                    <button class="quantity-btn" data-item-name="${itemName}" data-delta="-1">−</button>
+                                    <span class="quantity-display" id="${itemId}" data-item-name="${itemName}">${cart[itemName]?.quantity || 0}</span>
+                                    <button class="quantity-btn" data-item-name="${itemName}" data-delta="1">+</button>
+                                </div>
+                            </div>
+                        `;
+                        menuList.appendChild(li);
+                    });
+                }
+
+
+                document.getElementById('menuContent').style.display = 'block';
+                document.getElementById('submitOrderBtn').onclick = submitOrder;
+
+                // 團購模式：顯示「儲存店家」、隱藏「回到點餐」
+                const saveBtn = document.getElementById('saveShopBtn');
+                const backBtn = document.getElementById('backToOrderBtn');
+                if (saveBtn) saveBtn.style.display = 'inline-flex';
+                if (backBtn) backBtn.style.display = 'none';
+
+                // 檢查是否已有訂單
+                checkExistingOrder();
+                
+                console.log('[SUCCESS] 菜單成功顯示，共 ' + items.length + ' 項');
+
+            } catch (error) {
+                console.error('菜單解析失敗:', error);
+                document.getElementById('errorContent').style.display = 'block';
+                document.getElementById('errorContent').innerHTML = `<div class="error">菜單數據格式錯誤: ${error.message}</div>`;
+            }
+        }
+
+        // ===== 儲存當前菜單到我的店家 =====
+        async function saveCurrentShop() {
+            if (!userIdGlobal) {
+                Swal.fire({ icon: 'error', title: '錯誤', text: '無法取得用戶資訊，請重新整理頁面', confirmButtonColor: '#667eea' });
+                return;
+            }
+            if (!menuDataGlobal || menuDataGlobal.length === 0) {
+                Swal.fire({ icon: 'warning', title: '無菜單資料', text: '目前沒有可儲存的菜單', confirmButtonColor: '#667eea' });
+                return;
+            }
+
+            const defaultName = shopNameGlobal || '';
+
+            const { value: shopName, isConfirmed } = await Swal.fire({
+                title: '💾 儲存到我的店家',
+                html: `
+                    <p style="margin-bottom:12px; color:#555;">確定要將此菜單儲存到您的店家庫嗎？</p>
+                    <input id="swal-shop-name" class="swal2-input" placeholder="店家名稱" value="${defaultName}" style="font-size:15px;">
+                `,
+                confirmButtonText: '✅ 儲存',
+                cancelButtonText: '取消',
+                showCancelButton: true,
+                confirmButtonColor: '#38a169',
+                cancelButtonColor: '#aaa',
+                preConfirm: () => {
+                    const val = document.getElementById('swal-shop-name').value.trim();
+                    if (!val) {
+                        Swal.showValidationMessage('請輸入店家名稱');
+                        return false;
+                    }
+                    return val;
+                }
+            });
+
+            if (!isConfirmed || !shopName) return;
+
+            // 整理菜單格式
+            const menuItems = menuDataGlobal.map(item => ({
+                item_name: item.item_name || item.name || item.品項名稱 || '未知品項',
+                price: parseInt(item.price || item.價格 || item.價錢 || 0),
+                category: item.category || '未分類'
+            }));
+
+            try {
+                Swal.fire({ title: '儲存中...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+                const res = await fetch('/api/user-shop-menu', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: userIdGlobal,
+                        shop_name: shopName,
+                        new_shop_name: shopName,
+                        menu_items: menuItems
+                    })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: '✅ 儲存成功！',
+                        html: `<b>${shopName}</b> 已儲存到您的店家庫<br><small style="color:#666;">共 ${menuItems.length} 個品項</small>`,
+                        confirmButtonColor: '#38a169'
+                    });
+                    // 重新整理左側店家庫
+                    if (typeof loadUserShops === 'function') loadUserShops(userIdGlobal);
+                } else {
+                    Swal.fire({ icon: 'error', title: '儲存失敗', text: data.error || '未知錯誤', confirmButtonColor: '#667eea' });
+                }
+            } catch (err) {
+                Swal.fire({ icon: 'error', title: '網路錯誤', text: err.message, confirmButtonColor: '#667eea' });
+            }
+        }
+
+        // 頁面加載完成後初始化 LIFF
+        async function initLiff() {
+            try {
+                console.log('[0] 獲取配置信息...');
+                const configResponse = await fetch('/api/config');
+                const config = await configResponse.json();
+                const liffId = config.liffId;
+                console.log('[0b] 獲得 LIFF ID:', liffId);
+                
+                console.log('[1] 檢查 LIFF SDK...');
+                
+                let liffObj = null;
+                if (typeof window.liff !== 'undefined') {
+                    liffObj = window.liff;
+                    console.log('[1b] 從 window.liff 找到');
+                } else if (typeof liff !== 'undefined') {
+                    liffObj = liff;
+                    console.log('[1c] 從全局 liff 找到');
+                } else {
+                    console.error('[ERROR] liff 對象不存在');
+                    throw new Error('LIFF SDK 未在 LINE LIFF 環境中加載');
+                }
+
+                console.log('[2] 初始化 LIFF...');
+                
+                await liffObj.init({ liffId: liffId })
+                    .then(() => {
+                        console.log('[2b] LIFF 初始化成功');
+                    })
+                    .catch((err) => {
+                        throw new Error(`LIFF init 失敗: ${err.message}`);
+                    });
+                
+                console.log('[3] 檢查登入狀態...');
+                if (!liffObj.isLoggedIn()) {
+                    console.log('[4] 未登入，跳轉到登入...');
+                    liffObj.login();
+                    return;
+                }
+
+                console.log('[5] 獲取用户信息...');
+                const profile = await liffObj.getProfile();
+                console.log('[6] 獲得用户信息:', profile);
+                
+                userIdGlobal = profile.userId;
+                
+                // 設置用戶名：優先使用 displayName，如果為空則向後端查詢
+                let displayName = profile.displayName;
+                if (!displayName || displayName.trim() === '') {
+                    // 從後端查詢 LINE 用戶的真實名稱
+                    try {
+                        const profileResponse = await fetch(`/api/user-profile/${profile.userId}`);
+                        if (profileResponse.ok) {
+                            const lineProfile = await profileResponse.json();
+                            displayName = lineProfile.displayName || profile.userId;
+                            console.log('[6b] 從後端取得名稱:', displayName);
+                        } else {
+                            displayName = profile.userId;
+                        }
+                    } catch (err) {
+                        console.error('[6c] 查詢用戶名稱失敗:', err);
+                        displayName = profile.userId;
+                    }
+                }
+                userNameGlobal = displayName;  // 保存用戶名到全局變量
+                document.getElementById('userName').textContent = displayName;
+                document.getElementById('userAvatar').src = profile.pictureUrl;
+
+                // 載入當前使用者的個人專屬店家庫
+                loadUserShops(userIdGlobal);
+                
+                // 載入當前使用者的錢包餘額，並設定每 5 秒即時更新
+                fetchUserBalance();
+                if (!window.balancePollTimer) {
+                    window.balancePollTimer = setInterval(fetchUserBalance, 5000);
+                }
+
+                // 顯示歷史訂單按鈕
+                document.getElementById('historyBtn').style.display = 'flex';
+
+                console.log('[7] 獲取 session ID 和 group ID...');
+                const urlParams = new URLSearchParams(window.location.search);
+                const sessionId = urlParams.get('session');
+                const groupId = urlParams.get('group');
+                sessionIdGlobal = sessionId;
+                groupIdGlobal = groupId;
+                
+                if (sessionId) {
+                    console.log('[9] 開始辨識/載入菜單...');
+                    startSessionPolling(); // 開啟 AJAX 輪詢自動偵測結單
+                    try {
+                        let retries = 0;
+                        const maxRetries = 30; // 最高重試 30 秒
+                        
+                        while (retries < maxRetries) {
+                            const response = await fetch('/api/recognize', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({session_id: sessionId})
+                            });
+                            
+                            if (response.ok) {
+                                const data = await response.json();
+                                console.log('[10] 辨識結果:', data);
+                                
+                                if (data.status === 'completed') {
+                                    isSessionClosedGlobal = Boolean(data.is_closed);
+                                    initiatorIdGlobal = data.initiator_id || '';
+                                    displayMenu(data.menu);
+                                    return;
+                                }
+                            } else if (response.status === 404) {
+                                console.warn('[404] Session 不存在或已失效');
+                                break; // 404 表示 Session 不存在，立刻跳出迴圈避免卡死在載入中！
+                            }
+                            
+                            console.log(`[9.${retries}] 等待辨識... (${retries}s)`);
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                            retries++;
+                        }
+                        
+                        console.error('[ERROR] 菜單辨識超時或 Session 失效');
+                        displayMenu(null);
+                    } catch (error) {
+                        console.error('[13] 獲取菜單失敗:', error);
+                        displayMenu(null);
+                    }
+                } else {
+                    console.log('[14] 沒有 session ID');
+                    displayMenu(null);
+                }
+
+            } catch (error) {
+                console.error('❌ LIFF 初始化失敗:', error);
+                alert("抓到錯誤了：" + error.message);
+                
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('errorContent').style.display = 'block';
+                
+                let errorMsg = error.message;
+                if (error.message.includes('未在 LINE LIFF 環境')) {
+                    errorMsg += '<br><br><strong>解決方案：</strong><br>1. 請確認通過 LINE 的 LIFF 按鈕打開此頁面<br>2. 檢查 LINE Developer Console 中 LIFF 的 Endpoint URL 設定<br>3. 確保 LIFF ID 正確';
+                }
+                
+                document.getElementById('errorContent').innerHTML = `<div class="error">❌ LIFF 初始化失敗<br>${errorMsg}<br><small style="margin-top:10px;display:block">詳情見瀏覽器 F12 控制台</small></div>`;
+            }
+        }
+
+        console.log('[START] 開始初始化...');
+        
+        document.getElementById('cartIconBtn').addEventListener('click', openCart);
+        document.getElementById('cartCloseBtn').addEventListener('click', closeCart);
+        
+        document.getElementById('cartModal').addEventListener('click', (event) => {
+            if (event.target.id === 'cartModal') {
+                closeCart();
+            }
+        });
+        
+        document.getElementById('cartItemsList').addEventListener('click', (event) => {
+            if (event.target.classList.contains('cart-item-remove')) {
+                if (isSessionClosedGlobal) {
+                    alert('🔒 本次團購已結單，無法移除購物車餐點');
+                    return;
+                }
+                const itemName = event.target.getAttribute('data-item-name');
+                removeFromCart(itemName);
+            }
+        });
+        
+        document.addEventListener('click', (event) => {
+            if (event.target.classList.contains('quantity-btn') && event.target.getAttribute('data-item-name')) {
+                const itemName = event.target.getAttribute('data-item-name');
+                const delta = parseInt(event.target.getAttribute('data-delta'));
+                updateQuantity(itemName, delta);
+            }
+        });
+        
+        // 載入當前使用者在 Firebase 中建立的所有專屬店家
+        async function loadUserShops(userId) {
+            const shopsListEl = document.getElementById('userShopsList');
+            if (!userId) {
+                shopsListEl.innerHTML = '<div class="no-shops-msg">未取得使用者資訊</div>';
+                return;
+            }
+            try {
+                console.log(`[API] 正在載入使用者 ${userId} 的個人店家...`);
+                const response = await fetch(`/api/user-shops/${userId}`);
+                console.log('[API] 載入個人店家 HTTP 回應狀態:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const shops = data.shops || [];
+                    if (shops.length === 0) {
+                        shopsListEl.innerHTML = '<div class="no-shops-msg">尚未建立店家<br><span style="font-size:11px;color:#888;">長按圖片回覆：<br>「@機器人 上傳 店家名」<br>即可建立！</span></div>';
+                    } else {
+                        shopsListEl.innerHTML = '';
+                        shops.forEach(shop => {
+                            const div = document.createElement('div');
+                            div.className = 'shop-card' + (currentEditingShop === shop.shop_name ? ' active' : '');
+                            div.setAttribute('data-shop-name', shop.shop_name);
+                            div.onclick = () => selectShopToEdit(shop.shop_name);
+                            div.innerHTML = `
+                                <span class="shop-card-name" title="${shop.shop_name}">🏪 ${shop.shop_name}</span>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span class="shop-card-count">${shop.item_count} 項</span>
+                                    <button class="btn-delete-shop" onclick="deleteShop(event, '${shop.shop_name}')" title="刪除店家">✕</button>
+                                </div>
+                            `;
+                            shopsListEl.appendChild(div);
+                        });
+                    }
+                } else if (response.status === 404) {
+                    shopsListEl.innerHTML = '<div class="no-shops-msg">請重新啟動後端伺服器<br><span style="font-size:11px;color:#888;">(重新載入 app.py 端點)</span></div>';
+                } else {
+                    shopsListEl.innerHTML = '<div class="no-shops-msg">載入店家失敗</div>';
+                }
+            } catch (error) {
+                console.error('載入個人店家失敗:', error);
+                shopsListEl.innerHTML = '<div class="no-shops-msg">載入錯誤</div>';
+            }
+        }
+
+        // 刪除特定店家
+        async function deleteShop(event, shopName) {
+            event.stopPropagation();
+            if (!confirm(`確定要刪除店家【${shopName}】及其菜單資料嗎？`)) {
+                return;
+            }
+            try {
+                const res = await fetch(`/api/user-shop/${userIdGlobal}/${encodeURIComponent(shopName)}`, {
+                    method: 'DELETE'
+                });
+                if (res.ok) {
+                    alert(`✅ 店家【${shopName}】已成功刪除！`);
+                    if (currentEditingShop === shopName) {
+                        currentEditingShop = '';
+                        document.getElementById('menuContent').style.display = 'none';
+                    }
+                    loadUserShops(userIdGlobal);
+                } else {
+                    alert('❌ 刪除店家失敗');
+                }
+            } catch (err) {
+                console.error('刪除店家錯誤:', err);
+                alert('❌ 刪除店家失敗');
+            }
+        }
+
+        let currentEditingShop = '';
+
+        // 點擊左側店家卡片進行編輯/檢視
+        async function selectShopToEdit(shopName) {
+            currentEditingShop = shopName;
+            
+            // 高亮選中的店家卡片
+            document.querySelectorAll('.shop-card').forEach(card => {
+                card.classList.remove('active');
+                if (card.getAttribute('data-shop-name') === shopName) {
+                    card.classList.add('active');
+                }
+            });
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('menuContent').style.display = 'none';
+            document.getElementById('errorContent').style.display = 'none';
+
+            try {
+                const res = await fetch(`/api/user-shop-menu/${userIdGlobal}/${encodeURIComponent(shopName)}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const menu = data.menu || {};
+                    const items = menu.menu_items || menu.items || menu.menu || [];
+                    renderShopEditor(shopName, items);
+                } else {
+                    alert('❌ 無法載入【' + shopName + '】的菜單內容');
+                }
+            } catch (err) {
+                console.error('載入店家菜單錯誤:', err);
+                alert('❌ 載入店家菜單失敗');
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        // 渲染店家菜單編輯介面
+        function renderShopEditor(shopName, items) {
+            shopNameGlobal = shopName;
+            const shopNameDisplay = document.getElementById('shopNameDisplay');
+            shopNameDisplay.innerHTML = `
+                <div class="shop-edit-toolbar">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span style="font-size: 14px; font-weight: 600;">🏪 店家名稱：</span>
+                        <input type="text" id="editShopNameInput" class="edit-shop-name-title-input" value="${shopName}" placeholder="店家名稱">
+                    </div>
+                    <div class="edit-btn-group">
+                        <button class="btn-sm btn-add" onclick="addEditItemRow()">➕ 新增品項</button>
+                        <button class="btn-sm btn-save" onclick="saveCurrentShopMenu()">💾 儲存菜單</button>
+                    </div>
+                </div>
+            `;
+
+            const menuList = document.getElementById('menuList');
+            menuList.innerHTML = '';
+
+            if (items.length === 0) {
+                addEditItemRow();
+            } else {
+                items.forEach(item => {
+                    const itemName = item.item_name || item.name || '';
+                    const itemPrice = parseInt(item.price || 0);
+                    const itemCategory = item.category || '未分類';
+                    addEditItemRow(itemName, itemPrice, itemCategory);
+                });
+            }
+
+            // 編輯店家庫：隱藏「儲存店家」，改顯示「回到點餐」
+            const saveBtn = document.getElementById('saveShopBtn');
+            const backBtn = document.getElementById('backToOrderBtn');
+            if (saveBtn) saveBtn.style.display = 'none';
+            if (backBtn) backBtn.style.display = 'inline-flex';
+
+            document.getElementById('menuContent').style.display = 'block';
+        }
+
+        // 動態新增編輯品項列
+        function addEditItemRow(name = '', price = '', category = '未分類') {
+            const menuList = document.getElementById('menuList');
+            const li = document.createElement('li');
+            li.className = 'edit-item-row';
+            li.innerHTML = `
+                <input type="text" class="edit-input-category" placeholder="分類(如:主食)" value="${category}" style="width: 80px; padding: 8px 10px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px;">
+                <input type="text" class="edit-input-name" placeholder="餐點/飲料名稱" value="${name}">
+                <input type="number" class="edit-input-price" placeholder="價格" value="${price}">
+                <button class="btn-delete-item" onclick="this.parentElement.remove()" title="刪除此項目">🗑️</button>
+            `;
+            menuList.appendChild(li);
+        }
+
+        // 儲存目前店家的菜單編輯結果 (動態取得最新目前編輯的舊店家名稱)
+        async function saveCurrentShopMenu() {
+            const oldShopName = currentEditingShop;
+            const newShopNameInput = document.getElementById('editShopNameInput');
+            const newShopName = newShopNameInput ? newShopNameInput.value.trim() : oldShopName;
+
+            if (!newShopName) {
+                alert('❌ 店家名稱不可為空！');
+                return;
+            }
+
+            const rows = document.querySelectorAll('.edit-item-row');
+            const updatedItems = [];
+
+            rows.forEach(row => {
+                const categoryInput = row.querySelector('.edit-input-category');
+                const nameInput = row.querySelector('.edit-input-name');
+                const priceInput = row.querySelector('.edit-input-price');
+                const category = categoryInput && categoryInput.value ? categoryInput.value.trim() : '未分類';
+                const name = nameInput.value ? nameInput.value.trim() : '';
+                const price = parseInt(priceInput.value || 0);
+
+                if (name) {
+                    updatedItems.push({
+                        item_name: name,
+                        price: price,
+                        category: category
+                    });
+                }
+            });
+
+            try {
+                const res = await fetch('/api/user-shop-menu', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        user_id: userIdGlobal,
+                        old_shop_name: oldShopName,
+                        new_shop_name: newShopName,
+                        menu_items: updatedItems
+                    })
+                });
+
+                if (res.ok) {
+                    alert(`✅ 店家【${newShopName}】菜單已成功儲存！(共 ${updatedItems.length} 項)`);
+                    currentEditingShop = newShopName; // 關鍵修正：同步更新當前編輯名稱狀態
+                    renderShopEditor(newShopName, updatedItems); // 重新渲染編輯區介面
+                    loadUserShops(userIdGlobal); // 重新更新左側清單與計數
+                } else {
+                    const errData = await res.json();
+                    alert('❌ 儲存失敗: ' + (errData.error || '未知錯誤'));
+                }
+            } catch (err) {
+                console.error('儲存菜單錯誤:', err);
+                alert('❌ 儲存菜單失敗');
+            }
+        }
+        
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                console.log('[DOMContentLoaded] 開始 initLiff()');
+                initLiff();
+            });
+        } else {
+            console.log('[Ready] 直接執行 initLiff()');
+            initLiff();
+        }
+
+        // ===== 聊天機器人邏輯 =====
+        let chatIsOpen = false;
+
+        function toggleChat() {
+            chatIsOpen = !chatIsOpen;
+            const win = document.getElementById('chatWindow');
+            const fab = document.getElementById('chatFabBtn');
+            const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="#1e293b"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>`;
+            if (chatIsOpen) {
+                win.classList.add('open');
+                fab.classList.add('active');
+                fab.innerHTML = '<span style="font-size:20px;color:#1e293b;font-weight:600;line-height:1;">✕</span>';
+                setTimeout(() => {
+                    const inp = document.getElementById('chatInput');
+                    if (inp) inp.focus();
+                }, 300);
+            } else {
+                win.classList.remove('open');
+                fab.classList.remove('active');
+                fab.innerHTML = svgIcon;
+            }
+        }
+
+        function chatAppendMessage(text, role) {
+            const container = document.getElementById('chatMessages');
+            const wrap = document.createElement('div');
+            wrap.className = `chat-bubble-wrap ${role}`;
+
+            if (role === 'bot') {
+                wrap.innerHTML = `
+                    <div class="chat-avatar">🤖</div>
+                    <div class="chat-bubble bot">${text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+                `;
+            } else {
+                wrap.innerHTML = `
+                    <div class="chat-bubble user">${text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+                `;
+            }
+            container.appendChild(wrap);
+            container.scrollTop = container.scrollHeight;
+            return wrap;
+        }
+
+        function chatShowTyping() {
+            const container = document.getElementById('chatMessages');
+            const wrap = document.createElement('div');
+            wrap.className = 'chat-bubble-wrap bot';
+            wrap.id = 'chatTypingIndicator';
+            wrap.innerHTML = `
+                <div class="chat-avatar">🤖</div>
+                <div class="chat-typing"><span></span><span></span><span></span></div>
+            `;
+            container.appendChild(wrap);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function chatHideTyping() {
+            const el = document.getElementById('chatTypingIndicator');
+            if (el) el.remove();
+        }
+
+        async function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const sendBtn = document.getElementById('chatSendBtn');
+            const message = input.value.trim();
+
+            if (!message) return;
+            if (!userIdGlobal) {
+                chatAppendMessage('⚠️ 請先登入才能使用此功能！', 'bot');
+                return;
+            }
+
+            // 顯示使用者訊息
+            chatAppendMessage(message, 'user');
+            input.value = '';
+            sendBtn.disabled = true;
+
+            // 顯示打字動畫
+            chatShowTyping();
+
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: userIdGlobal,
+                        message: message
+                    })
+                });
+                const data = await res.json();
+                chatHideTyping();
+
+                if (res.ok) {
+                    chatAppendMessage(data.reply || '抱歉，我現在沒辦法回答 😅', 'bot');
+                } else {
+                    chatAppendMessage(`❌ 錯誤：${data.error || '請稍後再試'}`, 'bot');
+                }
+            } catch (err) {
+                chatHideTyping();
+                chatAppendMessage('😥 網路錯誤，請稍後再試', 'bot');
+                console.error('[Chat] 錯誤:', err);
+            } finally {
+                sendBtn.disabled = false;
+                input.focus();
+            }
+        }
+
+        // ===== 語音點餐邏輯 =====
+        let voiceRecognition = null;
+        let voiceIsListening = false;
+        let voiceIsProcessing = false;
+        let voiceToastTimer = null;
+
+        let silenceTimer = null;
+        let finalTranscript = '';
+        let interimTranscript = '';
+
+        // 初始化 Web Speech API
+        function initSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                console.warn('[語音點餐] 此瀏覽器不支援 Web Speech API');
+                return null;
+            }
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'zh-TW';
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.maxAlternatives = 1;
+
+            function resetSilenceTimer() {
+                if (silenceTimer) clearTimeout(silenceTimer);
+                silenceTimer = setTimeout(() => {
+                    console.log('[語音點餐] 偵測到 3 秒靜音，自動結束收音');
+                    recognition.stop();
+                }, 3000);
+            }
+
+            recognition.onstart = () => {
+                console.log('[語音點餐] 開始收音...');
+                voiceIsListening = true;
+                finalTranscript = '';
+                interimTranscript = '';
+                setMicState('listening');
+                showVoiceToast('🎙️ 聆聽中... 請說出想點的餐點\n(停頓3秒會自動送出)', '');
+                resetSilenceTimer();
+            };
+
+            recognition.onresult = (event) => {
+                resetSilenceTimer();
+                let tempFinal = '';
+                let tempInterim = '';
+                
+                for (let i = 0; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        tempFinal += event.results[i][0].transcript;
+                    } else {
+                        tempInterim += event.results[i][0].transcript;
+                    }
+                }
+                finalTranscript = tempFinal;
+                interimTranscript = tempInterim;
+                
+                const currentText = (finalTranscript + interimTranscript).trim();
+                if (currentText) {
+                    showVoiceToast(`🎙️ 聆聽中...\n💬 「${currentText}」`, '');
+                }
+            };
+
+            recognition.onerror = (event) => {
+                if (silenceTimer) clearTimeout(silenceTimer);
+                voiceIsListening = false;
+                setMicState('idle');
+                console.error('[語音點餐] 錯誤:', event.error);
+                if (event.error === 'not-allowed') {
+                    showVoiceToast('🚫 請允許麥克風權限後再試', 'error', 4000);
+                } else if (event.error === 'no-speech') {
+                    showVoiceToast('🔇 未偵測到語音，請再說一次', 'warning', 3000);
+                } else if (event.error === 'network') {
+                    showVoiceToast('📡 網路錯誤，請確認網路後再試', 'error', 3500);
+                } else {
+                    showVoiceToast(`❌ 語音辨識錯誤：${event.error}`, 'error', 3500);
+                }
+            };
+
+            recognition.onend = async () => {
+                if (silenceTimer) clearTimeout(silenceTimer);
+                
+                // 如果已經不是 listening 狀態（例如已經出錯或被手動關閉），直接退出
+                if (!voiceIsListening) return;
+                voiceIsListening = false;
+                
+                const transcript = finalTranscript.trim();
+                
+                if (!transcript) {
+                    setMicState('idle');
+                    showVoiceToast('🔇 未偵測到語音', 'warning', 3000);
+                    return;
+                }
+
+                console.log(`[語音點餐] 最終辨識結果：「${transcript}」`);
+                setMicState('processing');
+                showVoiceToast(`💬 「${transcript}」\n⏳ 解析中...`, '');
+                await processVoiceResult(transcript);
+            };
+
+            return recognition;
+        }
+
+
+        // 切換語音點餐（按下麥克風按鈕）
+        function toggleVoiceOrder() {
+            if (isSessionClosedGlobal) {
+                showVoiceToast('🔒 已結單，無法使用語音點餐', 'error', 3000);
+                return;
+            }
+            if (!menuDataGlobal || menuDataGlobal.length === 0) {
+                showVoiceToast('⚠️ 請先載入菜單後再使用語音點餐', 'warning', 3000);
+                return;
+            }
+            if (voiceIsProcessing) {
+                showVoiceToast('⏳ 正在處理中，請稍候...', 'warning', 2000);
+                return;
+            }
+
+            if (voiceIsListening) {
+                stopVoiceOrder();
+                return;
+            }
+            startVoiceOrder();
+        }
+
+        // 啟動語音辨識
+        function startVoiceOrder() {
+            if (!voiceRecognition) {
+                voiceRecognition = initSpeechRecognition();
+            }
+            if (!voiceRecognition) {
+                showVoiceToast('❌ 您的瀏覽器不支援語音辨識，請使用 Chrome 或 Android LINE', 'error', 4000);
+                return;
+            }
+            try {
+                voiceRecognition.start();
+            } catch (e) {
+                console.error('[語音點餐] 啟動失敗:', e);
+                // 若已在收音，先停止再重啟
+                try { voiceRecognition.stop(); } catch (_) {}
+                voiceRecognition = null;
+                setTimeout(() => startVoiceOrder(), 300);
+            }
+        }
+
+        // 停止語音辨識
+        function stopVoiceOrder() {
+            if (voiceRecognition && voiceIsListening) {
+                voiceRecognition.stop();
+            }
+            voiceIsListening = false;
+            setMicState('idle');
+            showVoiceToast('🛑 已停止收音', '', 1500);
+        }
+
+        // 呼叫後端 API 解析語音文字，並將結果加入/從購物車移除
+        async function processVoiceResult(transcript) {
+            voiceIsProcessing = true;
+            try {
+                const menuPayload = menuDataGlobal.map(item => ({
+                    item_name: item.item_name || item.name || item.品項名稱 || '',
+                    price: parseInt(item.price || item.價格 || 0)
+                })).filter(i => i.item_name);
+
+                // 將目前購物車傳給後端，讓 AI 知道哪些可以取消
+                const cartPayload = {};
+                for (const [name, data] of Object.entries(cart)) {
+                    cartPayload[name] = { price: data.price, quantity: data.quantity };
+                }
+
+                console.log('[語音點餐] 送出資料:', { voice_text: transcript, menu_count: menuPayload.length, cart: cartPayload });
+
+                const res = await fetch('/api/voice-order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        voice_text: transcript,
+                        menu_items: menuPayload,
+                        current_cart: cartPayload,
+                        session_id: sessionIdGlobal || null
+                    })
+                });
+
+                const data = await res.json();
+                console.log('[語音點餐] 後端回應:', data);
+
+                if (!res.ok) {
+                    showVoiceToast(`❌ ${data.error || '解析失敗'}`, 'error', 3500);
+                    return;
+                }
+
+                const addItems    = data.add    || [];
+                const removeItems = data.remove || [];
+                const unrecognized = data.unrecognized || [];
+
+                if (addItems.length === 0 && removeItems.length === 0) {
+                    const hint = unrecognized.length > 0
+                        ? `找不到「${unrecognized.join('、')}」，請確認品項名稱`
+                        : '未辨識到任何操作，請再說一次';
+                    showVoiceToast(`⚠️ ${hint}`, 'warning', 4000);
+                    return;
+                }
+
+                // 操作前備份購物車快照（用於撤銷）
+                lastVoiceSnapshot = JSON.parse(JSON.stringify(cart));
+
+                // 執行移除
+                removeItems.forEach(itemName => {
+                    if (cart[itemName]) {
+                        delete cart[itemName];
+                    }
+                });
+
+                // 執行新增
+                addItems.forEach(item => {
+                    const itemName = item.item_name;
+                    const qty = parseInt(item.quantity) || 1;
+                    const menuItem = menuDataGlobal.find(m => {
+                        const n = m.item_name || m.name || m.品項名稱 || '';
+                        return n === itemName;
+                    });
+                    const price = menuItem ? parseInt(menuItem.price || menuItem.價格 || 0) : 0;
+                    if (cart[itemName]) {
+                        cart[itemName].quantity += qty;
+                    } else {
+                        cart[itemName] = { price, quantity: qty };
+                    }
+                });
+
+                updateCartDisplay();
+
+                // 組合 Toast 訊息
+                const parts = [];
+                if (addItems.length > 0) {
+                    parts.push(`✅ 已加入：${addItems.map(r => `${r.item_name} ×${r.quantity}`).join('、')}`);
+                }
+                if (removeItems.length > 0) {
+                    parts.push(`🗑️ 已取消：${removeItems.join('、')}`);
+                }
+                if (unrecognized.length > 0) {
+                    parts.push(`⚠️ 未找到：${unrecognized.join('、')}`);
+                }
+                showVoiceToastWithUndo(parts.join('\n'), 5000);
+
+            } catch (err) {
+                console.error('[語音點餐] processVoiceResult 錯誤:', err);
+                showVoiceToast('😥 網路錯誤，請稍後再試', 'error', 3500);
+            } finally {
+                voiceIsProcessing = false;
+                setMicState('idle');
+            }
+        }
+
+        // 記錄語音點餐前的購物車快照（用於撤銷）
+        let lastVoiceSnapshot = null;
+
+        // 撤銷上一次語音點餐：從快照還原購物車
+        window.undoLastVoiceOrder = function(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            if (!lastVoiceSnapshot) return;
+            cart = lastVoiceSnapshot;
+            lastVoiceSnapshot = null;
+            updateCartDisplay();
+            showVoiceToast('↩️ 已撤銷語音點餐', '', 2000);
+        };
+
+        // 顯示帶「撤銷」按鈕的成功 Toast
+        function showVoiceToastWithUndo(message, duration = 5000) {
+            const toast = document.getElementById('voiceToast');
+            if (!toast) return;
+            if (voiceToastTimer) clearTimeout(voiceToastTimer);
+
+            toast.className = 'voice-toast success';
+            toast.innerHTML = `
+                <span style="flex:1;text-align:left;">${message.replace(/\n/g, '<br>')}</span>
+                <button class="voice-toast-undo" onpointerdown="window.undoLastVoiceOrder(event)" onclick="window.undoLastVoiceOrder(event)">↩️ 撤銷</button>
+            `;
+            
+            toast.classList.remove('show');
+            void toast.offsetWidth; // 強制重繪
+            toast.classList.add('show');
+            
+            voiceToastTimer = setTimeout(() => {
+                toast.classList.remove('show');
+                lastVoiceSnapshot = null; // 超時後不可再撤銷
+            }, duration);
+        }
+
+        // 更新麥克風按鈕狀態
+        function setMicState(state) {
+            const btn = document.getElementById('micFabBtn');
+            if (!btn) return;
+            btn.classList.remove('listening', 'processing');
+            if (state === 'listening') {
+                btn.classList.add('listening');
+                btn.innerHTML = '⏹️';
+                btn.title = '點擊停止收音';
+            } else if (state === 'processing') {
+                btn.classList.add('processing');
+                btn.innerHTML = '⏳';
+                btn.title = '解析中...';
+            } else {
+                btn.innerHTML = '🎙️';
+                btn.title = '語音點餐';
+            }
+        }
+
+        // 顯示語音 Toast 提示
+        function showVoiceToast(message, type = '', duration = 3000) {
+            const toast = document.getElementById('voiceToast');
+            if (!toast) return;
+            if (voiceToastTimer) clearTimeout(voiceToastTimer);
+
+            toast.className = 'voice-toast' + (type ? ` ${type}` : '');
+            toast.innerHTML = `<span style="flex:1;">${message.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}</span>`;
+            
+            toast.classList.remove('show');
+            void toast.offsetWidth; // 強制重繪
+            toast.classList.add('show');
+
+            if (duration > 0) {
+                voiceToastTimer = setTimeout(() => {
+                    toast.classList.remove('show');
+                }, duration);
+            }
+        }
+
+        // 在 displayMenu 成功後顯示麥克風按鈕（原函式呼叫後 hook）
+        const _origDisplayMenu = displayMenu;
+        window.displayMenu = function(menuData) {
+            _origDisplayMenu(menuData);
+            const micBtn = document.getElementById('micFabBtn');
+            if (micBtn) {
+                if (menuData && menuDataGlobal && menuDataGlobal.length > 0) {
+                    micBtn.style.display = 'flex';
+                } else {
+                    micBtn.style.display = 'none';
+                }
+            }
+        };
+
+        // 在 renderShopEditor（編輯模式）時隱藏麥克風按鈕
+        const _origRenderShopEditor = renderShopEditor;
+        window.renderShopEditor = function(shopName, items) {
+            _origRenderShopEditor(shopName, items);
+            const micBtn = document.getElementById('micFabBtn');
+            if (micBtn) micBtn.style.display = 'none';
+        };
+
+        // ===== 搜尋餐點功能 =====
+        document.addEventListener('DOMContentLoaded', () => {
+            // 由於 menuSearchInput 是固定的 DOM 元素，我們可以直接在這裡加上監聽
+            // 或者使用事件委派。為了確保動態載入的支援，我們直接綁定到 document
+            document.addEventListener('input', (e) => {
+                if (e.target && e.target.id === 'menuSearchInput') {
+                    const keyword = e.target.value.toLowerCase().trim();
+                    const menuItems = document.querySelectorAll('.menu-item');
+                    const categoryTabs = document.getElementById('categoryTabs');
+                    
+                    if (keyword) {
+                        // 有搜尋字詞：隱藏分類頁籤，顯示符合的項目
+                        if (categoryTabs) categoryTabs.style.display = 'none';
+                        menuItems.forEach(item => {
+                            const itemName = item.querySelector('.item-name')?.textContent.toLowerCase() || '';
+                            if (itemName.includes(keyword)) {
+                                item.style.display = 'flex';
+                            } else {
+                                item.style.display = 'none';
+                            }
+                        });
+                    } else {
+                        // 清空搜尋：恢復分類頁籤，並點擊 active 頁籤來恢復過濾
+                        if (categoryTabs) categoryTabs.style.display = 'flex';
+                        const activeTab = document.querySelector('.category-tab.active');
+                        if (activeTab) {
+                            activeTab.click();
+                        } else {
+                            menuItems.forEach(item => item.style.display = 'flex');
+                        }
+                    }
+                }
+            });
+        });
+
+        // 攔截 displayMenu 確保切換菜單時清空搜尋狀態
+        const _origDisplayMenuSearch = displayMenu;
+        window.displayMenu = function(menuData) {
+            _origDisplayMenuSearch(menuData);
+            const searchInput = document.getElementById('menuSearchInput');
+            if (searchInput) {
+                searchInput.value = '';
+            }
+            const categoryTabs = document.getElementById('categoryTabs');
+            if (categoryTabs) {
+                categoryTabs.style.display = 'flex';
+            }
+        };
+
+    </script>
+       
+    <!-- ===== 語音點餐 - 麥克風浮動按鈕 ===== -->
+    <button class="mic-fab-btn" id="micFabBtn" onclick="toggleVoiceOrder()" title="語音點餐">
+        🎙️
+    </button>
+
+    <!-- ===== 語音點餐 - 狀態提示 Toast ===== -->
+    <div class="voice-toast" id="voiceToast"></div>
+
+    <!-- ===== 聊天機器人 - 浮動按鈕 ===== -->
+    <button class="chat-fab-btn" id="chatFabBtn" onclick="toggleChat()" title="美食推薦機器人">
+        <svg id="chatFabIcon" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="#1e293b">
+            <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+        </svg>
+    </button>
+
+    <!-- ===== 聊天機器人 - 聊天視窗 ===== -->
+    <div class="chat-window" id="chatWindow">
+        <!-- Header -->
+        <div class="chat-header">
+            <div class="chat-header-icon">🤖</div>
+            <div class="chat-header-info">
+                <div class="chat-header-name">美食推薦小幫手</div>
+                <div class="chat-header-sub">告訴我你想吃什麼！</div>
+            </div>
+            <button class="chat-header-close" onclick="toggleChat()">✕</button>
+        </div>
+
+        <!-- 訊息列表 -->
+        <div class="chat-messages" id="chatMessages">
+            <!-- 歡迎訊息 -->
+            <div class="chat-bubble-wrap bot">
+                <div class="chat-avatar">🤖</div>
+                <div class="chat-bubble bot">嗨！我是美食推薦小幫手 🍽️
+
+輸入品項名稱，我幫你找哪些店家有賣！
+可一次輸入多個品項，用空白或逗號分隔。
+
+例如：
+・「牛肉麵」
+・「珍珠奶茶 炸雞排」
+・「拿鐵，蛋糕，三明治」</div>
+            </div>
+        </div>
+
+        <!-- 輸入區域 -->
+        <div class="chat-input-area">
+            <input
+                type="text"
+                class="chat-input"
+                id="chatInput"
+                placeholder="可輸入多個品項，空白或逗號分隔..."
+                onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); sendChatMessage(); }"
+                maxlength="100"
+            >
+            <button class="chat-send-btn" id="chatSendBtn" onclick="sendChatMessage()">➤</button>
+        </div>
+    </div>
+
+</body>
+</html>
