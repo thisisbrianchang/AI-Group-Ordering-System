@@ -1,0 +1,45 @@
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Firebase service-account credentials
+*firebase-adminsdk*.json
+serviceAccountKey.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+venv/
+.venv/
+env/
+
+# Generated runtime data
+output_orders/
+*.log
+*.tmp
+
+# Browser profiles / local session data
+.playwright/
+playwright-profile/
+.foodpanda_playwright_profile/
+
+# Local tools
+ngrok.exe
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local tests
+test.py
+*service-account*.json
+*firebase*.json
+credentials*.json
